@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora Simples Nacional + Fator R</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --line: #263244;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b, var(--bg));
+      color: var(--text);
+      line-height: 1.5;
+    }
+    main { max-width: 1180px; margin: 0 auto; padding: 32px 18px 56px; }
+    h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.05; margin: 0 0 12px; }
+    h2 { margin: 0 0 16px; font-size: 22px; }
+    h3 { margin: 0 0 10px; font-size: 17px; }
+    p { color: var(--muted); margin: 0 0 18px; }
+    .hero { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; margin-bottom: 18px; }
+    .card {
+      background: rgba(17, 24, 39, .88);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+    .inputs { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 13px;
+      background: #0b1220;
+      color: var(--text);
+      outline: none;
+      font-size: 15px;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.12); }
+    .full { grid-column: 1 / -1; }
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 16px;
+      color: #06111f;
+      background: var(--accent);
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-top: 18px; }
+    .metric { background: #0b1220; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+    .metric.good { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.08); }
+    .metric.badc { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.08); }
+    .diff-positive { color: #86efac; font-weight: 700; }
+    .diff-negative { color: #fca5a5; font-weight: 700; }
+    .compare-box {
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #0b1220;
+    }
+    .metric small { color: var(--muted); display: block; font-size: 12px; margin-bottom: 6px; }
+    .metric strong { font-size: 20px; display: block; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; }
+    .pill.ok { background: rgba(34,197,94,.14); color: #86efac; }
+    .pill.warn { background: rgba(245,158,11,.14); color: #fcd34d; }
+    .pill.bad { background: rgba(239,68,68,.14); color: #fca5a5; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 16px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 12px; font-weight: 700; background: #0b1220; }
+    td { font-size: 14px; }
+    .note { color: var(--muted); font-size: 13px; margin-top: 12px; }
+    .alert { border-left: 4px solid var(--warn); padding: 12px 14px; background: rgba(245,158,11,.08); border-radius: 12px; color: #fde68a; margin-top: 14px; }
+    .footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+    @media (max-width: 900px) {
+      .hero, .grid, .inputs, .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <div class="card">
+      <h1>Calculadora de impostos: Simples Nacional + Fator R</h1>
+      <p>Compare dois faturamentos mensais, estime o pró-labore necessário para atingir Fator R de 28%, calcule DAS estimado, INSS do pró-labore e total de impostos.</p>
+      <div class="alert">Simulação educativa. Confirme CNAE, anexo, folha, pró-labore, IRRF, ISS/ICMS e regras específicas com sua contabilidade.</div>
+    </div>
+    <div class="card">
+      <h2>Regra usada</h2>
+      <p><strong>Fator R = folha dos últimos 12 meses ÷ receita bruta dos últimos 12 meses.</strong></p>
+      <p>Se o resultado for igual ou maior que 28%, a atividade sujeita ao Fator R pode ir para o Anexo III. Abaixo de 28%, cai no Anexo V.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Entradas</h2>
+    <div class="inputs">
+      <div>
+        <label>Receita mensal A</label>
+        <input id="receitaA" type="number" value="9000" min="0" step="100" />
+      </div>
+      <div>
+        <label>Receita mensal B</label>
+        <input id="receitaB" type="number" value="22000" min="0" step="100" />
+      </div>
+    </div>
+    <button onclick="calcular()">Calcular comparação</button>
+    <p class="note">Dica: para “forçar” Fator R, use o pró-labore mínimo sugerido nos resultados.</p>
+  </section>
+
+  <section class="card" style="margin-top:18px;">
+    <h2>Resultado</h2>
+    <div id="resultado"></div>
+  </section>
+</main>
+
+<script>
+  const anexos = {
+    III: [
+      [180000, 0.06, 0],
+      [360000, 0.112, 9360],
+      [720000, 0.135, 17640],
+      [1800000, 0.16, 35640],
+      [3600000, 0.21, 125640],
+      [4800000, 0.33, 648000]
+    ],
+    V: [
+      [180000, 0.155, 0],
+      [360000, 0.18, 4500],
+      [720000, 0.195, 9900],
+      [1800000, 0.205, 17100],
+      [3600000, 0.23, 62100],
+      [4800000, 0.305, 540000]
+    ]
+  };
+
+  const brl = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const pct = v => `${((Number(v) || 0) * 100).toFixed(2).replace('.', ',')}%`;
+  const num = id => Number(document.getElementById(id).value) || 0;
+
+  function faixaDoAnexo(rbt12, anexo) {
+    const tabela = anexos[anexo];
+    return tabela.find(row => rbt12 <= row[0]) || tabela[tabela.length - 1];
+  }
+
+  function aliquotaEfetiva(rbt12, anexo) {
+    if (rbt12 <= 0) return 0;
+    const [limite, aliquota, deducao] = faixaDoAnexo(rbt12, anexo);
+    return Math.max(0, ((rbt12 * aliquota) - deducao) / rbt12);
+  }
+
+  function alertaLimites(rbt12) {
+    if (rbt12 > 4800000) return '<span class="pill bad">Fora do limite do Simples</span>';
+    if (rbt12 > 3600000) return '<span class="pill warn">Atenção ao sublimite ISS/ICMS</span>';
+    if (rbt12 > 360000) return '<span class="pill warn">Acima do limite de ME</span>';
+    return '<span class="pill ok">Dentro do limite ME</span>';
+  }
+
+  function calcularCenario(nome, receita) {
+    const rbt12 = receita * 12;
+    const prolabore = (rbt12 * 0.28) / 12;
+    const outrasFolhas = 0;
+    const inssRate = 11;
+    const inssTeto = 8475.55;
+    const extraRate = 0;
+
+    const folha12 = prolabore * 12;
+    const fatorR = rbt12 > 0 ? folha12 / rbt12 : 0;
+    const anexo = fatorR >= 0.28 ? 'III' : 'V';
+    const efetiva = aliquotaEfetiva(rbt12, anexo);
+    const das = receita * efetiva;
+    const baseInss = Math.min(prolabore, inssTeto);
+    const inss = baseInss * (inssRate / 100);
+    const extra = prolabore * (extraRate / 100);
+    const total = das + inss + extra;
+    const liquido = receita - total;
+    const proMin = prolabore;
+    const proFaltante = 0;
+    const anexoComProMin = proMin > 0 ? 'III' : anexo;
+    const efetivaComProMin = aliquotaEfetiva(rbt12, anexoComProMin);
+    const dasComProMin = receita * efetivaComProMin;
+    const inssComProMin = Math.min(proMin, inssTeto) * (inssRate / 100);
+    const extraComProMin = proMin * (extraRate / 100);
+    const totalComProMin = dasComProMin + inssComProMin + extraComProMin;
+    const liquidoComProMin = receita - totalComProMin;
+
+    return { nome, receita, rbt12, prolabore, outrasFolhas, folha12, fatorR, anexo, efetiva, das, inss, extra, total, liquido, proMin, proFaltante, dasComProMin, inssComProMin, extraComProMin, totalComProMin, liquidoComProMin };
+  }
+
+  function diffClass(v) {
+    return v >= 0 ? 'diff-positive' : 'diff-negative';
+  }
+
+  function render(cenarios) {
+    const melhorLiquido = cenarios[0].liquido > cenarios[1].liquido ? cenarios[0].nome : cenarios[1].nome;
+
+    const cards = cenarios.map(c => `
+      <div class="metric ${c.nome === melhorLiquido ? 'good' : 'badc'}">
+        <small>${c.nome} — Líquido mensal</small>
+        <strong>${brl(c.liquido)}</strong>
+        ${c.fatorR >= .28 ? '<span class="pill ok">Fator R atingido</span>' : '<span class="pill warn">Fator R não atingido</span>'}
+      </div>
+      <div class="metric">
+        <small>${c.nome} — Anexo / alíquota efetiva</small>
+        <strong>Anexo ${c.anexo}</strong>
+        <span>${pct(c.efetiva)}</span>
+      </div>
+    `).join('');
+
+    const rows = cenarios.map(c => `
+      <tr>
+        <td><strong>${c.nome}</strong><br>${alertaLimites(c.rbt12)}</td>
+        <td>${brl(c.receita)}</td>
+        <td>${brl(c.rbt12)}</td>
+        <td>${pct(c.fatorR)}</td>
+        <td>Anexo ${c.anexo}</td>
+        <td>${pct(c.efetiva)}</td>
+        <td>${brl(c.das)}</td>
+        <td>${brl(c.inss)}</td>
+        <td>${brl(c.extra)}</td>
+        <td><strong>${brl(c.total)}</strong></td>
+        <td><strong>${brl(c.liquido)}</strong></td>
+      </tr>
+    `).join('');
+
+    const diferencaReceita = cenarios[1].receita - cenarios[0].receita;
+    const diferencaImpostos = cenarios[1].total - cenarios[0].total;
+    const diferencaLiquido = cenarios[1].liquido - cenarios[0].liquido;
+    const ganhoLiquidoPercentual = cenarios[0].liquido > 0 ? (diferencaLiquido / cenarios[0].liquido) * 100 : 0;
+
+    const proRows = cenarios.map(c => `
+      <tr>
+        <td><strong>${c.nome}</strong></td>
+        <td>${brl(c.prolabore)}</td>
+        <td>${brl(c.outrasFolhas)}</td>
+        <td>${brl(c.proMin)}</td>
+        <td>${c.proFaltante > 0 ? brl(c.proFaltante) : 'Já atingiu'}</td>
+        <td>${brl(c.totalComProMin)}</td>
+        <td><strong>${brl(c.liquidoComProMin)}</strong></td>
+      </tr>
+    `).join('');
+
+    document.getElementById('resultado').innerHTML = `
+      <div class="summary">${cards}</div>
+      <h3 style="margin-top:22px;">Comparação principal</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Cenário</th><th>Receita/mês</th><th>RBT12</th><th>Fator R</th><th>Anexo</th><th>Alíquota efetiva</th><th>DAS</th><th>INSS pró-labore</th><th>Extra</th><th>Total impostos</th><th>Líquido mensal</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <h3 style="margin-top:22px;">Pró-labore mínimo para Fator R</h3>
+      <table>
+        <thead>
+          <tr><th>Cenário</th><th>Pró-labore atual</th><th>Outras folhas</th><th>Pró-labore mínimo sugerido</th><th>Falta aumentar</th><th>Total impostos com pró-labore mínimo</th><th>Líquido com pró-labore mínimo</th></tr>
+        </thead>
+        <tbody>${proRows}</tbody>
+      </table>
+      <div class="compare-box">
+        <h3>Diferença entre Cenário A e B</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Comparativo</th>
+              <th>Diferença</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Diferença de faturamento</td>
+              <td class="${diffClass(diferencaReceita)}">${brl(diferencaReceita)}</td>
+            </tr>
+            <tr>
+              <td>Diferença de impostos</td>
+              <td class="${diffClass(-diferencaImpostos)}">${brl(diferencaImpostos)}</td>
+            </tr>
+            <tr>
+              <td>Diferença de líquido mensal</td>
+              <td class="${diffClass(diferencaLiquido)}">${brl(diferencaLiquido)}</td>
+            </tr>
+            <tr>
+              <td>Ganho líquido percentual</td>
+              <td class="${diffClass(ganhoLiquidoPercentual)}">${ganhoLiquidoPercentual.toFixed(2)}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="footer">Observação: o líquido mensal é a receita menos DAS, INSS do pró-labore e campo extra opcional. A calculadora considera apenas DAS do Simples pela alíquota efetiva, INSS retido do sócio sobre pró-labore e um campo extra opcional. Não calcula IRRF/IRPF do sócio, honorários contábeis, folha de funcionários, FGTS, férias/13º, ISS/ICMS fora do DAS quando aplicável, nem particularidades de CNAE.</p>
+    `;
+  }
+
+  function atualizarProlaboreAutomatico() {}
+
+  function calcular() {
+    const cenarios = [
+      calcularCenario('Cenário A', num('receitaA')),
+      calcularCenario('Cenário B', num('receitaB'))
+    ];
+    render(cenarios);
+  }
+
+  ['receitaA','receitaB'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calcular);
+  });
+  calcular();
+</script>
+</body>
+</html>
