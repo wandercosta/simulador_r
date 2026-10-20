@@ -212,6 +212,21 @@
         <input id="dependentes" type="number" value="0" min="0" step="1" />
       </div>
       <div>
+        <label for="contador">Honorários do contador (R$/mês)<span class="hint">Simples Nacional</span></label>
+        <input id="contador" type="number" value="0" min="0" step="50" />
+      </div>
+      <div>
+        <label for="contadorPresumido">Honorários do contador no Presumido (R$/mês)<span class="hint">Vazio = mesmo valor do Simples (costuma ser mais caro)</span></label>
+        <input id="contadorPresumido" type="number" min="0" step="50" placeholder="igual ao Simples" />
+      </div>
+      <div>
+        <label for="decimo">13º pró-labore<span class="hint">Conta na folha do Fator R e reduz o pró-labore mensal</span></label>
+        <select id="decimo">
+          <option value="0">Não — 12 pró-labores por ano</option>
+          <option value="1">Sim — 13 pró-labores (dobra em dezembro)</option>
+        </select>
+      </div>
+      <div>
         <label for="mesesAtividade">Empresa com menos de 12 meses? Meses de atividade<span class="hint">Meses completos antes do mês atual — vazio = 12 ou mais</span></label>
         <input id="mesesAtividade" type="number" min="1" max="11" step="1" placeholder="ex.: 5" />
       </div>
@@ -299,7 +314,7 @@
   const el = id => document.getElementById(id);
   const num = id => { const v = parseFloat(el(id).value); return isFinite(v) ? v : 0; };
 
-  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','atividade','salarios','compras','iss','reducao','dependentes','mesesAtividade','receitaDesdeAbertura','rbt12','cbs','ibs','salMin','teto'];
+  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','atividade','decimo','contador','contadorPresumido','salarios','compras','iss','reducao','dependentes','mesesAtividade','receitaDesdeAbertura','rbt12','cbs','ibs','salMin','teto'];
   const PADRAO = {};
   CAMPOS.forEach(id => PADRAO[id] = el(id).value);
 
@@ -320,6 +335,7 @@
       clientes: el('clientes').value,
       exportacao: el('clientes').value === 'ext',
       atividade: el('atividade').value,
+      decimo: el('decimo').value === '1',
       salarios: num('salarios'),
       compras: num('compras'),
       iss: num('iss') / 100,
@@ -329,6 +345,8 @@
       rbt12: num('rbt12') || rbt12Proporcional,
       cbs: num('cbs') / 100,
       ibs: num('ibs') / 100,
+      contadorSimples: num('contador'),
+      contadorPresumido: el('contadorPresumido').value.trim() === '' ? num('contador') : num('contadorPresumido'),
       salMin: num('salMin'),
       teto: num('teto')
     };
@@ -367,7 +385,8 @@
 
   function prolaboreFatorR(p) {
     const rbt12 = p.rbt12 || p.receita * 12;
-    const necessario = (0.28 * rbt12) / 12 - p.salarios * 1.08;
+    const pagamentos = p.decimo ? 13 : 12;
+    const necessario = (0.28 * rbt12 - p.salarios * 1.08 * 12) / pagamentos;
     return Math.max(p.salMin, Math.ceil(necessario / 10) * 10);
   }
 
@@ -376,6 +395,9 @@
     const R = p.receita, pl = h.prolabore, sal = p.salarios, C = p.compras;
     const y = cfgAno(ano);
     const fgts = sal * 0.08;
+    // Com 13º pró-labore: 13 pagamentos/ano; plMes = média mensal do pró-labore
+    const plMes = p.decimo ? pl * 13 / 12 : pl;
+    const contador = h.regime === 'presumido' ? p.contadorPresumido : p.contadorSimples;
     const L = { das: 0, pis: 0, cofins: 0, irpj: 0, csll: 0, iss: 0, cbs: 0, ibs: 0, inssPatronal: 0 };
 
     const exp = p.exportacao;
@@ -406,7 +428,7 @@
     let fatorR = null, anexo = null, info = null, irpjCsll = 0, cpp = 0;
     if (h.regime === 'simples') {
       const rbt12 = p.rbt12 || R * 12;
-      fatorR = rbt12 > 0 ? ((pl + sal + fgts) * 12) / rbt12 : 0;
+      fatorR = rbt12 > 0 ? ((plMes + sal + fgts) * 12) / rbt12 : 0;
       anexo = fatorR >= 0.28 ? 'III' : 'V';
       info = simplesInfo(rbt12, anexo);
       const sh = info.sh;
@@ -425,20 +447,27 @@
       const presumido = base * 0.32;
       L.irpj = presumido * 0.15 + Math.max(0, presumido - 20000) * 0.10;
       L.csll = presumido * 0.09;
-      L.inssPatronal = pl * 0.20 + sal * 0.278;
+      L.inssPatronal = plMes * 0.20 + sal * 0.278;
       irpjCsll = L.irpj + L.csll;
     }
 
     const tributosPJ = Object.values(L).reduce((a, b) => a + b, 0);
-    const inssSocio = Math.min(pl, p.teto) * 0.11;
-    const irrf = calcIRRF(pl, inssSocio, p.dep);
-    const lucro = R - tributosPJ - sal - fgts - custoCompras - pl;
+    let inssSocio = Math.min(pl, p.teto) * 0.11;
+    let irrf = calcIRRF(pl, inssSocio, p.dep);
+    if (p.decimo && pl > 0) {
+      // Dezembro com pró-labore em dobro: INSS limitado ao teto do mês, IR sobre o total
+      const inssDez = Math.min(pl * 2, p.teto) * 0.11;
+      const irDez = calcIRRF(pl * 2, inssDez, p.dep);
+      inssSocio = (inssSocio * 11 + inssDez) / 12;
+      irrf = (irrf * 11 + irDez) / 12;
+    }
+    const lucro = R - tributosPJ - sal - fgts - custoCompras - contador - plMes;
     const div = Math.max(0, lucro);
     const irDiv = div > 50000 ? div * 0.10 : 0;
 
     // IRPFM (imposto mínimo anual, renda > R$ 600 mil) — estimativa simplificada
     let irpfm = 0;
-    const rendaAnual = (pl + div) * 12;
+    const rendaAnual = (plMes + div) * 12;
     if (rendaAnual > 600000) {
       const aliq = Math.min(0.10, rendaAnual / 6000000 - 0.10);
       const devido = aliq * rendaAnual;
@@ -448,11 +477,11 @@
       irpfm = Math.max(0, devido - pago - redutor) / 12;
     }
 
-    const bolso = pl - inssSocio - irrf + div - irDiv - irpfm;
+    const bolso = plMes - inssSocio - irrf + div - irDiv - irpfm;
     const totalTributos = tributosPJ + inssSocio + irrf + irDiv + irpfm;
 
     return {
-      ...h, ano, R, L, cpp, fatorR, anexo, info, ivaFora, fgts, tributosPJ, inssSocio, irrf, lucro, div, irDiv, irpfm,
+      ...h, ano, R, L, cpp, plMes, contador, fatorR, anexo, info, ivaFora, fgts, tributosPJ, inssSocio, irrf, lucro, div, irDiv, irpfm,
       rendaAnual, bolso, totalTributos, carga: R > 0 ? totalTributos / R : 0,
       creditoCliente, creditoCompras, custoCliente: R - creditoCliente
     };
@@ -519,7 +548,7 @@
         <h4>${r.nome}</h4>
         <div>${etiquetas(r)}</div>
         <dl>
-          <dt>Pró-labore declarado</dt><dd>${brl(r.prolabore)}</dd>
+          <dt>Pró-labore declarado</dt><dd>${brl(r.prolabore)}${r.prolabore > 0 && r.plMes !== r.prolabore ? ' ×13' : ''}</dd>
           <dt>${r.regime === 'simples' ? 'DAS' : 'Impostos da empresa'}</dt><dd>${brl(r.tributosPJ - r.L.inssPatronal)}</dd>
           ${r.cpp ? `<dt>&nbsp;↳ INSS patronal já no DAS</dt><dd>${brl(r.cpp)}</dd>` : ''}
           ${r.L.inssPatronal ? `<dt>INSS patronal (20%)</dt><dd>${brl(r.L.inssPatronal)}</dd>` : ''}
@@ -528,6 +557,7 @@
           ${r.irDiv + r.irpfm > 0.005 ? `<dt>IR sobre lucros</dt><dd>${brl(r.irDiv + r.irpfm)}</dd>` : ''}
           <dt><b>Tributos totais</b></dt><dd><b>${brl(r.totalTributos)}</b></dd>
           <dt>Carga total</dt><dd>${pct(r.carga)}</dd>
+          ${r.contador ? `<dt>Contador</dt><dd>${brl(r.contador)}</dd>` : ''}
         </dl>
         <small class="muted" style="display:block;margin-top:10px">Bolso do sócio / mês</small>
         <div class="bolso">${brl(r.bolso)}</div>
@@ -565,7 +595,8 @@
           ${linhas.map(([l, f, informativa]) => row(l, f, informativa ? 'muted' : '')).join('')}
           ${row('Total de tributos', r => r.totalTributos, 'total')}
           ${row('Carga total sobre o faturamento', r => r.carga, '', v => pct(v))}
-          ${row('Pró-labore líquido', r => r.prolabore - r.inssSocio - r.irrf)}
+          ${res.some(r => r.contador) ? row('Honorários do contador (custo, não é tributo)', r => r.contador, 'muted') : ''}
+          ${row('Pró-labore líquido (média mensal)', r => r.plMes - r.inssSocio - r.irrf)}
           ${row('Lucro distribuído (líquido)', r => r.div - r.irDiv - r.irpfm)}
           <tr class="bolso"><td>Bolso do sócio</td>${res.map(r => `<td class="${!r.risco && Math.abs(r.bolso - best) < 0.01 ? 'best' : ''}">${brl(r.bolso)}</td>`).join('')}</tr>
         </tbody>
@@ -681,6 +712,14 @@
       out.push({ t: ganho > 0 ? 'ok' : 'warn', h: `<b>Fator R:</b> declarar ${brl(fr.prolabore)} de pró-labore em vez de ${brl(min.prolabore)} custa ${brl(custoPL)} a mais de INSS + IR, mas reduz o DAS em ${brl(economiaDas)}. Resultado: ${ganho > 0 ? 'você ganha' : 'você perde'} <b>${brl(Math.abs(ganho))}/mês</b> (${brl0(Math.abs(ganho) * 12)}/ano).` });
     } else if (fr && fr.anexo === 'III' && !min) {
       out.push({ t: 'ok', h: `<b>Fator R já atingido</b> com o pró-labore mínimo graças à folha de funcionários — você já está no Anexo III.` });
+    }
+
+    if (fr && fr.anexo === 'III') {
+      const pAlt = { ...p, decimo: !p.decimo };
+      const alt = simular({ ...fr, prolabore: prolaboreFatorR(pAlt) }, p.ano, pAlt);
+      const com = p.decimo ? fr : alt, sem = p.decimo ? alt : fr;
+      const dif = com.bolso - sem.bolso;
+      out.push({ t: dif > 0 ? 'ok' : '', h: `<b>13º pró-labore:</b> com 13 pagamentos, o pró-labore do Fator R cai de ${brl(sem.prolabore)} para ${brl(com.prolabore)}/mês (dezembro em dobro). Imposto do sócio no ano: ${brl0((sem.inssSocio + sem.irrf) * 12)} sem 13º × ${brl0((com.inssSocio + com.irrf) * 12)} com 13º — ${dif > 0 ? `<b>economia de ${brl0(dif * 12)}/ano</b>, principalmente porque o INSS de dezembro para no teto` : `diferença de ${brl0(Math.abs(dif) * 12)}/ano`}. Confirme com o contador como ele lança o 13º (pró-labore não tem 13º obrigatório).` });
     }
 
     if (zero && min) {
@@ -820,7 +859,8 @@
           <li>Lucro Presumido: presunção de 32%, IRPJ 15% + adicional de 10%, CSLL 9%, PIS 0,65%, Cofins 3%, ISS municipal, INSS patronal de 20% sobre pró-labore e ~27,8% sobre salários.</li>
           <li>Reforma: CBS substitui PIS/Cofins em 2027; IBS substitui o ISS em 10%/20%/30%/40% de 2029 a 2032 e integralmente em 2033. O preço informado é o total pago pelo cliente (IBS/CBS por fora já embutidos). Créditos sobre compras de fornecedores no regime regular.</li>
           <li>Exportação de serviço: DAS sem as parcelas de PIS, Cofins e ISS; no Presumido, sem PIS/Cofins/ISS; imune a IBS/CBS a partir de 2027. Considera 100% da receita como exportação.</li>
-          <li>Não inclui: honorários contábeis, Lucro Real, Anexo IV, sublimite de ISS, ISS fixo de sociedade uniprofissional, benefícios da folha (férias/13º do sócio) e IRPF anual completo.</li>
+          <li>Honorários do contador entram como custo (reduzem o lucro distribuído), não como tributo. Com 13º pró-labore, dezembro paga pró-labore em dobro: INSS limitado ao teto do mês e IR sobre o total; valores mostrados como média mensal.</li>
+          <li>Não inclui: Lucro Real, Anexo IV, sublimite de ISS, ISS fixo de sociedade uniprofissional, benefícios da folha (férias/13º do sócio) e IRPF anual completo.</li>
         </ul>
       </section>
     `;
