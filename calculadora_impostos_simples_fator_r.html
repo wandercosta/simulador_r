@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calculadora Simples Nacional + Fator R</title>
+  <title>Guia Tributário · Simples, Fator R e Reforma</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -21,14 +21,15 @@
       margin: 0;
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: radial-gradient(circle at top, #1e293b, var(--bg));
+      background-color: var(--bg);
       color: var(--text);
       line-height: 1.5;
     }
-    main { max-width: 1180px; margin: 0 auto; padding: 32px 18px 56px; }
-    h1 { font-size: clamp(28px, 5vw, 48px); line-height: 1.05; margin: 0 0 12px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 56px; }
+    h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.05; margin: 0 0 12px; }
     h2 { margin: 0 0 16px; font-size: 22px; }
-    h3 { margin: 0 0 10px; font-size: 17px; }
-    p { color: var(--muted); margin: 0 0 18px; }
+    h3 { margin: 22px 0 10px; font-size: 17px; }
+    p { color: var(--muted); margin: 0 0 14px; }
     .hero { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; margin-bottom: 18px; }
     .card {
       background: rgba(17, 24, 39, .88);
@@ -36,10 +37,11 @@
       border-radius: 22px;
       padding: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      margin-bottom: 18px;
     }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
-    .inputs { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+    .inputs { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
     label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    label .hint { display: block; font-size: 11px; opacity: .8; }
     input, select {
       width: 100%;
       border: 1px solid var(--line);
@@ -52,277 +54,736 @@
     }
     input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.12); }
     .full { grid-column: 1 / -1; }
+    .big input { font-size: 22px; font-weight: 800; padding: 14px; }
+    details { margin-top: 16px; border: 1px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
+    summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+    details .inputs { margin-top: 12px; }
     button {
       border: 0;
-      border-radius: 16px;
-      padding: 13px 16px;
+      border-radius: 14px;
+      padding: 11px 16px;
       color: #06111f;
       background: var(--accent);
       font-weight: 800;
       cursor: pointer;
-      width: 100%;
-      margin-top: 8px;
     }
-    .summary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-top: 18px; }
-    .metric { background: #0b1220; border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
-    .metric.good { border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.08); }
-    .metric.badc { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.08); }
-    .diff-positive { color: #86efac; font-weight: 700; }
-    .diff-negative { color: #fca5a5; font-weight: 700; }
-    .compare-box {
-      margin-top: 20px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 18px;
-      background: #0b1220;
+    button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    .headline {
+      border: 1px solid rgba(34,197,94,.45);
+      background: rgba(34,197,94,.08);
+      border-radius: 18px; padding: 18px; margin-bottom: 18px;
     }
-    .metric small { color: var(--muted); display: block; font-size: 12px; margin-bottom: 6px; }
-    .metric strong { font-size: 20px; display: block; }
-    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 800; }
+    .headline small { color: var(--muted); display: block; }
+    .headline strong.v { font-size: clamp(24px, 4vw, 34px); display: block; color: #86efac; }
+    .headline .sub { color: var(--text); margin-top: 6px; }
+
+    .hyps { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .hyp { background: #0b1220; border: 1px solid var(--line); border-radius: 16px; padding: 14px; position: relative; }
+    .hyp.best { border-color: rgba(34,197,94,.6); background: rgba(34,197,94,.07); }
+    .hyp.risk { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06); }
+    .hyp .rank { position: absolute; top: 12px; right: 12px; color: var(--muted); font-weight: 800; font-size: 13px; }
+    .hyp h4 { margin: 0 28px 8px 0; font-size: 15px; line-height: 1.3; }
+    .hyp .bolso { font-size: 22px; font-weight: 800; }
+    .hyp dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin: 10px 0 0; font-size: 13px; }
+    .hyp dt { color: var(--muted); }
+    .hyp dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; margin: 2px 4px 2px 0; }
     .pill.ok { background: rgba(34,197,94,.14); color: #86efac; }
     .pill.warn { background: rgba(245,158,11,.14); color: #fcd34d; }
     .pill.bad { background: rgba(239,68,68,.14); color: #fca5a5; }
-    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 16px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--line); }
-    th { color: var(--muted); font-size: 12px; font-weight: 700; background: #0b1220; }
+    .pill.info { background: rgba(56,189,248,.14); color: #7dd3fc; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-size: 12px; font-weight: 700; background: #0b1220; vertical-align: bottom; }
     td { font-size: 14px; }
-    .note { color: var(--muted); font-size: 13px; margin-top: 12px; }
-    .alert { border-left: 4px solid var(--warn); padding: 12px 14px; background: rgba(245,158,11,.08); border-radius: 12px; color: #fde68a; margin-top: 14px; }
+    tr.total td { font-weight: 800; background: rgba(56,189,248,.05); }
+    tr.bolso td { font-weight: 800; color: #86efac; }
+    td.best { color: #86efac; font-weight: 800; }
+    td.muted, .muted { color: var(--muted); }
+
+    .insights { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .insights li { border-left: 4px solid var(--accent); background: #0b1220; border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+    .insights li.warn { border-left-color: var(--warn); }
+    .insights li.bad { border-left-color: var(--bad); }
+    .insights li.ok { border-left-color: var(--ok); }
+    .insights li b { color: var(--text); }
+
+    .alert { border-left: 4px solid var(--warn); padding: 12px 14px; background: rgba(245,158,11,.08); border-radius: 12px; color: #fde68a; margin-top: 14px; font-size: 14px; }
+    .chart { width: 100%; height: auto; display: block; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
     .footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+    .premissas { font-size: 13px; color: var(--muted); padding-left: 18px; margin: 0; }
+    .premissas li { margin-bottom: 4px; }
+
     @media (max-width: 900px) {
-      .hero, .grid, .inputs, .summary { grid-template-columns: 1fr; }
+      .hero, .inputs { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; color: #000; }
+      .card, .hyp, .headline { box-shadow: none; background: #fff; border-color: #ccc; }
+      .actions, details { display: none; }
+      p, .muted, th { color: #444; }
     }
   </style>
 </head>
 <body>
 <main>
   <section class="hero">
-    <div class="card">
-      <h1>Calculadora de impostos: Simples Nacional + Fator R</h1>
-      <p>Compare dois faturamentos mensais, estime o pró-labore necessário para atingir Fator R de 28%, calcule DAS estimado, INSS do pró-labore e total de impostos.</p>
-      <div class="alert">Simulação educativa. Confirme CNAE, anexo, folha, pró-labore, IRRF, ISS/ICMS e regras específicas com sua contabilidade.</div>
+    <div class="card" style="margin-bottom:0">
+      <h1>Guia tributário: quanto sobra no seu bolso?</h1>
+      <p>Informe o faturamento mensal e o guia levanta todas as hipóteses: Simples Anexo V ou III (Fator R), declarar ou não pró-labore, Lucro Presumido e o efeito da Reforma Tributária (CBS/IBS) ano a ano. O resultado mostra o imposto da empresa <b>e</b> o do sócio, porque é isso que define quanto você realmente recebe.</p>
+      <div class="alert">Simulação educativa com regras simplificadas de 2026. Use para levantar perguntas e cenários — a decisão final deve ser validada com seu contador (CNAE, município, histórico de RBT12 e particularidades).</div>
     </div>
-    <div class="card">
-      <h2>Regra usada</h2>
-      <p><strong>Fator R = folha dos últimos 12 meses ÷ receita bruta dos últimos 12 meses.</strong></p>
-      <p>Se o resultado for igual ou maior que 28%, a atividade sujeita ao Fator R pode ir para o Anexo III. Abaixo de 28%, cai no Anexo V.</p>
+    <div class="card" style="margin-bottom:0">
+      <h2>Como ler</h2>
+      <p><b>Bolso do sócio</b> = pró-labore líquido (após INSS e IR) + lucro distribuído líquido.</p>
+      <p><b>Carga total</b> = todos os tributos (empresa + sócio) ÷ faturamento.</p>
+      <p><b>Fator R</b> = folha 12 meses ÷ receita 12 meses. ≥ 28% → Anexo III; abaixo → Anexo V.</p>
     </div>
   </section>
 
   <section class="card">
-    <h2>Entradas</h2>
+    <h2>Seus dados</h2>
     <div class="inputs">
-      <div>
-        <label>Receita mensal A</label>
-        <input id="receitaA" type="number" value="9000" min="0" step="100" />
+      <div class="big">
+        <label for="receita">Faturamento mensal (R$)</label>
+        <input id="receita" type="number" value="22000" min="0" step="500" />
       </div>
       <div>
-        <label>Receita mensal B</label>
-        <input id="receitaB" type="number" value="22000" min="0" step="100" />
+        <label for="prolaboreAtual">Pró-labore que você declara hoje (R$)<span class="hint">Opcional — deixe vazio se não sabe</span></label>
+        <input id="prolaboreAtual" type="number" min="0" step="100" placeholder="ex.: 1621" />
+      </div>
+      <div>
+        <label for="ano">Ano da simulação</label>
+        <select id="ano">
+          <option value="2026" selected>2026 — regras atuais</option>
+          <option value="2027">2027 — CBS substitui PIS/Cofins</option>
+          <option value="2029">2029 — IBS 10% / ISS 90%</option>
+          <option value="2030">2030 — IBS 20% / ISS 80%</option>
+          <option value="2031">2031 — IBS 30% / ISS 70%</option>
+          <option value="2032">2032 — IBS 40% / ISS 60%</option>
+          <option value="2033">2033+ — IVA completo, ISS extinto</option>
+        </select>
+      </div>
+      <div>
+        <label for="clientes">Seus clientes são</label>
+        <select id="clientes">
+          <option value="pf">Pessoas físicas / consumidor final</option>
+          <option value="pj">Empresas (que tomam crédito de IBS/CBS)</option>
+        </select>
+      </div>
+      <div>
+        <label for="salarios">Folha de funcionários CLT (R$/mês)<span class="hint">Salários brutos, média com 13º e férias</span></label>
+        <input id="salarios" type="number" value="0" min="0" step="100" />
+      </div>
+      <div>
+        <label for="compras">Compras e insumos de empresas (R$/mês)<span class="hint">Software, aluguel, equipamentos… geram crédito a partir de 2027</span></label>
+        <input id="compras" type="number" value="0" min="0" step="100" />
+      </div>
+      <div>
+        <label for="iss">ISS do seu município (%)<span class="hint">Usado no Lucro Presumido (2% a 5%)</span></label>
+        <input id="iss" type="number" value="5" min="2" max="5" step="0.5" />
+      </div>
+      <div>
+        <label for="reducao">Redução de IBS/CBS da sua atividade</label>
+        <select id="reducao">
+          <option value="0">Nenhuma (alíquota cheia)</option>
+          <option value="0.3">30% — profissão regulamentada (advogado, engenheiro, contador…)</option>
+          <option value="0.6">60% — saúde, educação e outros</option>
+        </select>
+      </div>
+      <div>
+        <label for="dependentes">Dependentes no IR do sócio</label>
+        <input id="dependentes" type="number" value="0" min="0" step="1" />
       </div>
     </div>
-    <button onclick="calcular()">Calcular comparação</button>
-    <p class="note">Dica: para “forçar” Fator R, use o pró-labore mínimo sugerido nos resultados.</p>
+
+    <details>
+      <summary>Parâmetros avançados</summary>
+      <div class="inputs">
+        <div>
+          <label for="rbt12">Receita bruta dos últimos 12 meses (R$)<span class="hint">Vazio = faturamento mensal × 12</span></label>
+          <input id="rbt12" type="number" min="0" step="1000" placeholder="automático" />
+        </div>
+        <div>
+          <label for="cbs">Alíquota de referência CBS (%)</label>
+          <input id="cbs" type="number" value="8.8" min="0" step="0.1" />
+        </div>
+        <div>
+          <label for="ibs">Alíquota de referência IBS (%)</label>
+          <input id="ibs" type="number" value="17.7" min="0" step="0.1" />
+        </div>
+        <div>
+          <label for="salMin">Salário mínimo (R$)</label>
+          <input id="salMin" type="number" value="1621" min="0" step="1" />
+        </div>
+        <div>
+          <label for="teto">Teto do INSS (R$)</label>
+          <input id="teto" type="number" value="8475.55" min="0" step="0.01" />
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="button" onclick="window.print()">Imprimir / salvar PDF para o contador</button>
+      <button type="button" class="ghost" onclick="resetar()">Restaurar valores padrão</button>
+    </div>
   </section>
 
-  <section class="card" style="margin-top:18px;">
-    <h2>Resultado</h2>
-    <div id="resultado"></div>
-  </section>
+  <div id="resultado"></div>
 </main>
 
 <script>
-  const anexos = {
-    III: [
-      [180000, 0.06, 0],
-      [360000, 0.112, 9360],
-      [720000, 0.135, 17640],
-      [1800000, 0.16, 35640],
-      [3600000, 0.21, 125640],
-      [4800000, 0.33, 648000]
-    ],
-    V: [
-      [180000, 0.155, 0],
-      [360000, 0.18, 4500],
-      [720000, 0.195, 9900],
-      [1800000, 0.205, 17100],
-      [3600000, 0.23, 62100],
-      [4800000, 0.305, 540000]
-    ]
+  // ---------- Tabelas ----------
+  // Simples Nacional: [limite RBT12, alíquota nominal, parcela a deduzir]
+  // Partilha por faixa: [IRPJ, CSLL, Cofins, PIS, CPP, ISS]
+  const ANEXOS = {
+    III: {
+      faixas: [[180000,.06,0],[360000,.112,9360],[720000,.135,17640],[1800000,.16,35640],[3600000,.21,125640],[4800000,.33,648000]],
+      partilha: [
+        [.04,.035,.1282,.0278,.434,.335],
+        [.04,.035,.1405,.0305,.434,.32],
+        [.04,.035,.1364,.0296,.434,.325],
+        [.04,.035,.1364,.0296,.434,.325],
+        [.04,.035,.1282,.0278,.434,.335],
+        [.35,.15,.1603,.0347,.305,0]
+      ]
+    },
+    V: {
+      faixas: [[180000,.155,0],[360000,.18,4500],[720000,.195,9900],[1800000,.205,17100],[3600000,.23,62100],[4800000,.305,540000]],
+      partilha: [
+        [.25,.15,.141,.0305,.2885,.14],
+        [.23,.15,.141,.0305,.2785,.17],
+        [.24,.15,.1492,.0323,.2385,.19],
+        [.21,.15,.1574,.0341,.2385,.21],
+        [.23,.125,.141,.0305,.2385,.235],
+        [.35,.155,.1644,.0356,.295,0]
+      ]
+    }
   };
 
+  // IRRF mensal 2026: [limite da base, alíquota, dedução]
+  const IRRF = [[2428.80,0,0],[2826.65,.075,182.16],[3751.05,.15,394.16],[4664.68,.225,675.49],[Infinity,.275,908.73]];
+  const DED_DEPENDENTE = 189.59;
+  const DESC_SIMPLIFICADO = 607.20;
+
+  const ANOS_LINHA = [2026, 2027, 2029, 2031, 2033];
+
+  // ---------- Utilidades ----------
   const brl = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const pct = v => `${((Number(v) || 0) * 100).toFixed(2).replace('.', ',')}%`;
-  const num = id => Number(document.getElementById(id).value) || 0;
+  const brl0 = v => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  const pct = (v, d = 2) => `${((Number(v) || 0) * 100).toFixed(d).replace('.', ',')}%`;
+  const el = id => document.getElementById(id);
+  const num = id => { const v = parseFloat(el(id).value); return isFinite(v) ? v : 0; };
 
-  function faixaDoAnexo(rbt12, anexo) {
-    const tabela = anexos[anexo];
-    return tabela.find(row => rbt12 <= row[0]) || tabela[tabela.length - 1];
+  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','salarios','compras','iss','reducao','dependentes','rbt12','cbs','ibs','salMin','teto'];
+  const PADRAO = {};
+  CAMPOS.forEach(id => PADRAO[id] = el(id).value);
+
+  function lerParams() {
+    const atualTxt = el('prolaboreAtual').value.trim();
+    return {
+      receita: num('receita'),
+      prolaboreAtual: atualTxt === '' ? null : Math.max(0, parseFloat(atualTxt) || 0),
+      ano: Number(el('ano').value),
+      clientes: el('clientes').value,
+      salarios: num('salarios'),
+      compras: num('compras'),
+      iss: num('iss') / 100,
+      reducao: Number(el('reducao').value),
+      dep: Math.max(0, Math.floor(num('dependentes'))),
+      rbt12: num('rbt12'),
+      cbs: num('cbs') / 100,
+      ibs: num('ibs') / 100,
+      salMin: num('salMin'),
+      teto: num('teto')
+    };
   }
 
-  function aliquotaEfetiva(rbt12, anexo) {
-    if (rbt12 <= 0) return 0;
-    const [limite, aliquota, deducao] = faixaDoAnexo(rbt12, anexo);
-    return Math.max(0, ((rbt12 * aliquota) - deducao) / rbt12);
+  // ---------- Regras ----------
+  function cfgAno(ano) {
+    // fração do IBS em vigor (ISS cai na mesma proporção)
+    let ibs = 0;
+    if (ano >= 2033) ibs = 1;
+    else if (ano >= 2029) ibs = (ano - 2028) * 0.1;
+    return { cbs: ano >= 2027, ibs };
   }
 
-  function alertaLimites(rbt12) {
-    if (rbt12 > 4800000) return '<span class="pill bad">Fora do limite do Simples</span>';
-    if (rbt12 > 3600000) return '<span class="pill warn">Atenção ao sublimite ISS/ICMS</span>';
-    if (rbt12 > 360000) return '<span class="pill warn">Acima do limite de ME</span>';
-    return '<span class="pill ok">Dentro do limite ME</span>';
+  function simplesInfo(rbt12, anexo) {
+    const t = ANEXOS[anexo];
+    let i = t.faixas.findIndex(f => rbt12 <= f[0]);
+    if (i < 0) i = t.faixas.length - 1;
+    const [, nominal, deducao] = t.faixas[i];
+    const ef = rbt12 > 0 ? Math.max(0, (rbt12 * nominal - deducao) / rbt12) : nominal;
+    const [irpj, csll, cofins, pis, cpp, iss] = t.partilha[i];
+    return { faixa: i + 1, ef, sh: { irpj, csll, cofins, pis, cpp, iss } };
   }
 
-  function calcularCenario(nome, receita) {
-    const rbt12 = receita * 12;
-    const prolabore = (rbt12 * 0.28) / 12;
-    const outrasFolhas = 0;
-    const inssRate = 11;
-    const inssTeto = 8475.55;
-    const extraRate = 0;
-
-    const folha12 = prolabore * 12;
-    const fatorR = rbt12 > 0 ? folha12 / rbt12 : 0;
-    const anexo = fatorR >= 0.28 ? 'III' : 'V';
-    const efetiva = aliquotaEfetiva(rbt12, anexo);
-    const das = receita * efetiva;
-    const baseInss = Math.min(prolabore, inssTeto);
-    const inss = baseInss * (inssRate / 100);
-    const extra = prolabore * (extraRate / 100);
-    const total = das + inss + extra;
-    const liquido = receita - total;
-    const proMin = prolabore;
-    const proFaltante = 0;
-    const anexoComProMin = proMin > 0 ? 'III' : anexo;
-    const efetivaComProMin = aliquotaEfetiva(rbt12, anexoComProMin);
-    const dasComProMin = receita * efetivaComProMin;
-    const inssComProMin = Math.min(proMin, inssTeto) * (inssRate / 100);
-    const extraComProMin = proMin * (extraRate / 100);
-    const totalComProMin = dasComProMin + inssComProMin + extraComProMin;
-    const liquidoComProMin = receita - totalComProMin;
-
-    return { nome, receita, rbt12, prolabore, outrasFolhas, folha12, fatorR, anexo, efetiva, das, inss, extra, total, liquido, proMin, proFaltante, dasComProMin, inssComProMin, extraComProMin, totalComProMin, liquidoComProMin };
+  function calcIRRF(bruto, inss, dep) {
+    if (bruto <= 0) return 0;
+    const base = Math.max(0, Math.min(bruto - inss - dep * DED_DEPENDENTE, bruto - DESC_SIMPLIFICADO));
+    const [, aliq, ded] = IRRF.find(f => base <= f[0]);
+    const imposto = Math.max(0, base * aliq - ded);
+    // Redutor da Lei 15.270/2025 (isenção até R$ 5 mil, parcial até R$ 7.350)
+    let redutor = 0;
+    if (bruto <= 5000) redutor = Math.min(imposto, 312.89);
+    else if (bruto <= 7350) redutor = Math.max(0, 978.62 - 0.133145 * bruto);
+    return Math.max(0, imposto - redutor);
   }
 
-  function diffClass(v) {
-    return v >= 0 ? 'diff-positive' : 'diff-negative';
+  function prolaboreFatorR(p) {
+    const rbt12 = p.rbt12 || p.receita * 12;
+    const necessario = (0.28 * rbt12) / 12 - p.salarios * 1.08;
+    return Math.max(p.salMin, Math.ceil(necessario / 10) * 10);
   }
 
-  function render(cenarios) {
-    const melhorLiquido = cenarios[0].liquido > cenarios[1].liquido ? cenarios[0].nome : cenarios[1].nome;
+  // Simula uma hipótese em um ano. h = { regime: 'simples'|'presumido', prolabore, hibrido }
+  function simular(h, ano, p) {
+    const R = p.receita, pl = h.prolabore, sal = p.salarios, C = p.compras;
+    const y = cfgAno(ano);
+    const fgts = sal * 0.08;
+    const L = { das: 0, pis: 0, cofins: 0, irpj: 0, csll: 0, iss: 0, cbs: 0, ibs: 0, inssPatronal: 0 };
 
-    const cards = cenarios.map(c => `
-      <div class="metric ${c.nome === melhorLiquido ? 'good' : 'badc'}">
-        <small>${c.nome} — Líquido mensal</small>
-        <strong>${brl(c.liquido)}</strong>
-        ${c.fatorR >= .28 ? '<span class="pill ok">Fator R atingido</span>' : '<span class="pill warn">Fator R não atingido</span>'}
-      </div>
-      <div class="metric">
-        <small>${c.nome} — Anexo / alíquota efetiva</small>
-        <strong>Anexo ${c.anexo}</strong>
-        <span>${pct(c.efetiva)}</span>
-      </div>
-    `).join('');
+    const ivaFora = ano >= 2027 && (h.regime === 'presumido' || h.hibrido);
+    const tCbs = y.cbs ? p.cbs * (1 - p.reducao) : 0;
+    const tIbs = y.ibs * p.ibs * (1 - p.reducao);
+    const tFornCbs = y.cbs ? p.cbs : 0;
+    const tFornIbs = y.ibs * p.ibs;
 
-    const rows = cenarios.map(c => `
-      <tr>
-        <td><strong>${c.nome}</strong><br>${alertaLimites(c.rbt12)}</td>
-        <td>${brl(c.receita)}</td>
-        <td>${brl(c.rbt12)}</td>
-        <td>${pct(c.fatorR)}</td>
-        <td>Anexo ${c.anexo}</td>
-        <td>${pct(c.efetiva)}</td>
-        <td>${brl(c.das)}</td>
-        <td>${brl(c.inss)}</td>
-        <td>${brl(c.extra)}</td>
-        <td><strong>${brl(c.total)}</strong></td>
-        <td><strong>${brl(c.liquido)}</strong></td>
-      </tr>
-    `).join('');
+    let base = R, custoCompras = C, creditoCliente = 0, creditoCompras = 0;
+    if (ivaFora) {
+      // Preço informado = total pago pelo cliente (IBS/CBS "por fora" já embutidos)
+      base = R / (1 + tCbs + tIbs);
+      const baseC = C / (1 + tFornCbs + tFornIbs);
+      const credCbs = baseC * tFornCbs, credIbs = baseC * tFornIbs;
+      creditoCompras = credCbs + credIbs;
+      L.cbs = Math.max(0, base * tCbs - credCbs);
+      L.ibs = Math.max(0, base * tIbs - credIbs);
+      custoCompras = C - creditoCompras;
+      creditoCliente = base * (tCbs + tIbs);
+    }
 
-    const diferencaReceita = cenarios[1].receita - cenarios[0].receita;
-    const diferencaImpostos = cenarios[1].total - cenarios[0].total;
-    const diferencaLiquido = cenarios[1].liquido - cenarios[0].liquido;
-    const ganhoLiquidoPercentual = cenarios[0].liquido > 0 ? (diferencaLiquido / cenarios[0].liquido) * 100 : 0;
+    let fatorR = null, anexo = null, info = null, irpjCsll = 0;
+    if (h.regime === 'simples') {
+      const rbt12 = p.rbt12 || R * 12;
+      fatorR = rbt12 > 0 ? ((pl + sal + fgts) * 12) / rbt12 : 0;
+      anexo = fatorR >= 0.28 ? 'III' : 'V';
+      info = simplesInfo(rbt12, anexo);
+      const sh = info.sh;
+      const fracDas = ivaFora ? 1 - sh.pis - sh.cofins - sh.iss * y.ibs : 1;
+      L.das = base * info.ef * fracDas;
+      irpjCsll = base * info.ef * (sh.irpj + sh.csll);
+      if (!ivaFora && ano >= 2027) {
+        // Simples "por dentro": cliente só aproveita a parcela de CBS/IBS embutida no DAS
+        creditoCliente = R * info.ef * (sh.pis + sh.cofins + sh.iss * y.ibs);
+      }
+    } else {
+      if (ano < 2027) { L.pis = R * 0.0065; L.cofins = R * 0.03; }
+      L.iss = base * p.iss * (1 - y.ibs);
+      const presumido = base * 0.32;
+      L.irpj = presumido * 0.15 + Math.max(0, presumido - 20000) * 0.10;
+      L.csll = presumido * 0.09;
+      L.inssPatronal = pl * 0.20 + sal * 0.278;
+      irpjCsll = L.irpj + L.csll;
+    }
 
-    const proRows = cenarios.map(c => `
-      <tr>
-        <td><strong>${c.nome}</strong></td>
-        <td>${brl(c.prolabore)}</td>
-        <td>${brl(c.outrasFolhas)}</td>
-        <td>${brl(c.proMin)}</td>
-        <td>${c.proFaltante > 0 ? brl(c.proFaltante) : 'Já atingiu'}</td>
-        <td>${brl(c.totalComProMin)}</td>
-        <td><strong>${brl(c.liquidoComProMin)}</strong></td>
-      </tr>
-    `).join('');
+    const tributosPJ = Object.values(L).reduce((a, b) => a + b, 0);
+    const inssSocio = Math.min(pl, p.teto) * 0.11;
+    const irrf = calcIRRF(pl, inssSocio, p.dep);
+    const lucro = R - tributosPJ - sal - fgts - custoCompras - pl;
+    const div = Math.max(0, lucro);
+    const irDiv = div > 50000 ? div * 0.10 : 0;
 
-    document.getElementById('resultado').innerHTML = `
-      <div class="summary">${cards}</div>
-      <h3 style="margin-top:22px;">Comparação principal</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Cenário</th><th>Receita/mês</th><th>RBT12</th><th>Fator R</th><th>Anexo</th><th>Alíquota efetiva</th><th>DAS</th><th>INSS pró-labore</th><th>Extra</th><th>Total impostos</th><th>Líquido mensal</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <h3 style="margin-top:22px;">Pró-labore mínimo para Fator R</h3>
-      <table>
-        <thead>
-          <tr><th>Cenário</th><th>Pró-labore atual</th><th>Outras folhas</th><th>Pró-labore mínimo sugerido</th><th>Falta aumentar</th><th>Total impostos com pró-labore mínimo</th><th>Líquido com pró-labore mínimo</th></tr>
-        </thead>
-        <tbody>${proRows}</tbody>
-      </table>
-      <div class="compare-box">
-        <h3>Diferença entre Cenário A e B</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Comparativo</th>
-              <th>Diferença</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Diferença de faturamento</td>
-              <td class="${diffClass(diferencaReceita)}">${brl(diferencaReceita)}</td>
-            </tr>
-            <tr>
-              <td>Diferença de impostos</td>
-              <td class="${diffClass(-diferencaImpostos)}">${brl(diferencaImpostos)}</td>
-            </tr>
-            <tr>
-              <td>Diferença de líquido mensal</td>
-              <td class="${diffClass(diferencaLiquido)}">${brl(diferencaLiquido)}</td>
-            </tr>
-            <tr>
-              <td>Ganho líquido percentual</td>
-              <td class="${diffClass(ganhoLiquidoPercentual)}">${ganhoLiquidoPercentual.toFixed(2)}%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    // IRPFM (imposto mínimo anual, renda > R$ 600 mil) — estimativa simplificada
+    let irpfm = 0;
+    const rendaAnual = (pl + div) * 12;
+    if (rendaAnual > 600000) {
+      const aliq = Math.min(0.10, rendaAnual / 6000000 - 0.10);
+      const devido = aliq * rendaAnual;
+      const pago = (irrf + irDiv) * 12;
+      const aliqPJ = (div + irpjCsll) > 0 ? irpjCsll / (div + irpjCsll) : 0;
+      const redutor = Math.min(aliq * div * 12, Math.max(0, aliqPJ + aliq - 0.34) * div * 12);
+      irpfm = Math.max(0, devido - pago - redutor) / 12;
+    }
 
-      <p class="footer">Observação: o líquido mensal é a receita menos DAS, INSS do pró-labore e campo extra opcional. A calculadora considera apenas DAS do Simples pela alíquota efetiva, INSS retido do sócio sobre pró-labore e um campo extra opcional. Não calcula IRRF/IRPF do sócio, honorários contábeis, folha de funcionários, FGTS, férias/13º, ISS/ICMS fora do DAS quando aplicável, nem particularidades de CNAE.</p>
+    const bolso = pl - inssSocio - irrf + div - irDiv - irpfm;
+    const totalTributos = tributosPJ + inssSocio + irrf + irDiv + irpfm;
+
+    return {
+      ...h, ano, R, L, fatorR, anexo, info, ivaFora, fgts, tributosPJ, inssSocio, irrf, lucro, div, irDiv, irpfm,
+      rendaAnual, bolso, totalTributos, carga: R > 0 ? totalTributos / R : 0,
+      creditoCliente, creditoCompras, custoCliente: R - creditoCliente
+    };
+  }
+
+  // ---------- Hipóteses ----------
+  function montarHipoteses(p) {
+    const plFR = prolaboreFatorR(p);
+    const list = [
+      { id: 'fr', regime: 'simples', prolabore: plFR, nome: 'Simples · pró-labore ajustado ao Fator R',
+        desc: 'Declara pró-labore suficiente para a folha chegar a 28% da receita e cair no Anexo III.' },
+      { id: 'min', regime: 'simples', prolabore: p.salMin, nome: 'Simples · pró-labore de 1 salário mínimo',
+        desc: 'Declara o mínimo e retira o resto como lucro (isento). Sem Fator R, normalmente fica no Anexo V.' },
+      { id: 'zero', regime: 'simples', prolabore: 0, nome: 'Simples · não declarar pró-labore', risco: true,
+        desc: 'Retira tudo como lucro. Parece mais barato, mas sócio que trabalha na empresa é obrigado a ter pró-labore.' },
+      { id: 'presumido', regime: 'presumido', prolabore: p.salMin, nome: 'Lucro Presumido · pró-labore mínimo',
+        desc: 'Fora do Simples: IRPJ/CSLL sobre 32% da receita, PIS/Cofins (CBS a partir de 2027), ISS e 20% de INSS patronal.' }
+    ];
+    if (p.prolaboreAtual !== null) {
+      list.unshift({ id: 'atual', regime: 'simples', prolabore: p.prolaboreAtual, atual: true,
+        nome: `Sua situação atual · pró-labore ${brl0(p.prolaboreAtual)}`, desc: 'O que você declara hoje, no Simples Nacional.' });
+    }
+    // remove duplicadas (mesmo regime e mesmo pró-labore)
+    const vistos = new Set();
+    return list.filter(h => {
+      const k = `${h.regime}|${Math.round(h.prolabore)}`;
+      if (vistos.has(k)) return false;
+      vistos.add(k); return true;
+    });
+  }
+
+  function hipoteseHibrida(hips, p) {
+    const anoRef = Math.max(2027, p.ano);
+    const candidatas = hips.filter(h => h.regime === 'simples' && !h.risco);
+    const melhor = candidatas
+      .map(h => ({ h, r: simular(h, anoRef, p) }))
+      .sort((a, b) => b.r.bolso - a.r.bolso)[0];
+    if (!melhor) return null;
+    return { id: 'hibrido', regime: 'simples', hibrido: true, prolabore: melhor.h.prolabore,
+      nome: 'Simples híbrido · IBS/CBS por fora', desc: `Mesmo pró-labore da melhor opção do Simples (${brl0(melhor.h.prolabore)}), mas recolhendo IBS/CBS fora do DAS para gerar crédito integral ao cliente. Disponível a partir de 2027.` };
+  }
+
+  // ---------- Renderização ----------
+  function etiquetas(r) {
+    const t = [];
+    if (r.regime === 'simples') {
+      t.push(`<span class="pill ${r.anexo === 'III' ? 'ok' : 'warn'}">Anexo ${r.anexo} · ${pct(r.info.ef)}</span>`);
+      t.push(`<span class="pill info">Fator R ${pct(r.fatorR, 1)}</span>`);
+    } else {
+      t.push('<span class="pill info">Lucro Presumido</span>');
+    }
+    if (r.hibrido) t.push('<span class="pill info">Híbrido</span>');
+    if (r.risco) t.push('<span class="pill bad">Risco fiscal</span>');
+    if (r.atual) t.push('<span class="pill info">Atual</span>');
+    return t.join('');
+  }
+
+  function cardHipotese(r, pos, melhorId) {
+    const cls = r.risco ? 'risk' : (r.id === melhorId ? 'best' : '');
+    return `
+      <div class="hyp ${cls}">
+        <span class="rank">${r.risco ? '⚠' : '#' + pos}</span>
+        <h4>${r.nome}</h4>
+        <div>${etiquetas(r)}</div>
+        <dl>
+          <dt>Pró-labore declarado</dt><dd>${brl(r.prolabore)}</dd>
+          <dt>Tributos totais</dt><dd>${brl(r.totalTributos)}</dd>
+          <dt>Carga total</dt><dd>${pct(r.carga)}</dd>
+        </dl>
+        <small class="muted" style="display:block;margin-top:10px">Bolso do sócio / mês</small>
+        <div class="bolso">${brl(r.bolso)}</div>
+        <small class="muted">${brl0(r.bolso * 12)} por ano</small>
+      </div>`;
+  }
+
+  function tabelaDetalhe(res) {
+    const linhas = [
+      ['DAS (Simples)', r => r.L.das],
+      ['IRPJ', r => r.L.irpj],
+      ['CSLL', r => r.L.csll],
+      ['PIS', r => r.L.pis],
+      ['Cofins', r => r.L.cofins],
+      ['ISS', r => r.L.iss],
+      ['CBS (líquida de créditos)', r => r.L.cbs],
+      ['IBS (líquido de créditos)', r => r.L.ibs],
+      ['INSS patronal (20% s/ pró-labore + folha)', r => r.L.inssPatronal],
+      ['INSS do sócio (11%)', r => r.inssSocio],
+      ['IRRF sobre pró-labore', r => r.irrf],
+      ['IR 10% sobre dividendos > R$ 50 mil/mês', r => r.irDiv],
+      ['IRPFM — imposto mínimo (provisão mensal)', r => r.irpfm]
+    ].filter(([, f]) => res.some(r => f(r) > 0.005));
+
+    const head = res.map(r => `<th>${r.nome}</th>`).join('');
+    const row = (label, f, cls = '', fmt = brl) => `<tr class="${cls}"><td>${label}</td>${res.map(r => `<td>${fmt(f(r))}</td>`).join('')}</tr>`;
+    const best = Math.max(...res.filter(r => !r.risco).map(r => r.bolso));
+
+    return `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item (R$/mês)</th>${head}</tr></thead>
+        <tbody>
+          ${row('Faturamento', r => r.R)}
+          ${linhas.map(([l, f]) => row(l, f)).join('')}
+          ${row('Total de tributos', r => r.totalTributos, 'total')}
+          ${row('Carga total sobre o faturamento', r => r.carga, '', v => pct(v))}
+          ${row('Pró-labore líquido', r => r.prolabore - r.inssSocio - r.irrf)}
+          ${row('Lucro distribuído (líquido)', r => r.div - r.irDiv - r.irpfm)}
+          <tr class="bolso"><td>Bolso do sócio</td>${res.map(r => `<td class="${!r.risco && Math.abs(r.bolso - best) < 0.01 ? 'best' : ''}">${brl(r.bolso)}</td>`).join('')}</tr>
+        </tbody>
+      </table></div>`;
+  }
+
+  function tabelaLinhaDoTempo(hips, hib, p) {
+    const todas = hib ? [...hips, hib] : hips;
+    const cols = ANOS_LINHA.map(a => {
+      const res = todas.map(h => (h.hibrido && a < 2027) ? null : simular(h, a, p));
+      const best = Math.max(...res.filter(r => r && !r.risco).map(r => r.bolso));
+      return { a, res, best };
+    });
+    const body = todas.map((h, i) => `
+      <tr><td>${h.nome}${h.risco ? ' <span class="pill bad">risco</span>' : ''}</td>
+        ${cols.map(c => {
+          const r = c.res[i];
+          if (!r) return '<td class="muted">—</td>';
+          const isBest = !r.risco && Math.abs(r.bolso - c.best) < 0.01;
+          return `<td class="${isBest ? 'best' : ''}">${brl0(r.bolso)}<br><small class="muted">carga ${pct(r.carga, 1)}</small></td>`;
+        }).join('')}
+      </tr>`).join('');
+    return `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Bolso do sócio por mês</th>${cols.map(c => `<th>${c.a === 2033 ? '2033+' : c.a}</th>`).join('')}</tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>`;
+  }
+
+  function tabelaCreditoCliente(res, p) {
+    if (p.ano < 2027) {
+      return `<p>Em 2026 o IBS/CBS está em fase de teste (0,9% + 0,1%, compensáveis) e o Simples está dispensado. A diferença de crédito para clientes empresa começa em <b>2027</b> — mude o ano da simulação para ver.</p>`;
+    }
+    const lista = res.filter(r => !r.risco);
+    return `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Hipótese</th><th>Preço cobrado</th><th>Crédito de IBS/CBS do cliente</th><th>Custo real para o cliente</th><th>Bolso do sócio</th></tr></thead>
+        <tbody>${lista.map(r => `
+          <tr><td>${r.nome}</td><td>${brl(r.R)}</td><td>${brl(r.creditoCliente)}</td><td><b>${brl(r.custoCliente)}</b></td><td>${brl(r.bolso)}</td></tr>`).join('')}
+        </tbody>
+      </table></div>
+      <p class="footer">Um cliente empresa no regime regular desconta o crédito do que paga. Quanto maior o crédito que você gera, mais barato você fica para ele — ou mais margem você tem para reajustar o preço.</p>`;
+  }
+
+  function graficoProlabore(p) {
+    const plFR = prolaboreFatorR(p);
+    const xMax = Math.max(plFR * 1.5, p.salMin * 4, 6000);
+    const N = 90;
+    const pontosS = [], pontosP = [];
+    for (let i = 0; i <= N; i++) {
+      const pl = xMax * i / N;
+      pontosS.push([pl, simular({ regime: 'simples', prolabore: pl }, p.ano, p).bolso]);
+      pontosP.push([pl, simular({ regime: 'presumido', prolabore: pl }, p.ano, p).bolso]);
+    }
+    // garante o salto exato no Fator R
+    pontosS.push([plFR, simular({ regime: 'simples', prolabore: plFR }, p.ano, p).bolso]);
+    pontosS.sort((a, b) => a[0] - b[0]);
+
+    const ys = [...pontosS, ...pontosP].map(q => q[1]);
+    let yMin = Math.min(...ys), yMax = Math.max(...ys);
+    const pad = (yMax - yMin) * 0.1 || 100;
+    yMin -= pad; yMax += pad;
+    const W = 720, H = 300, ml = 78, mr = 16, mt = 16, mb = 40;
+    const sx = x => ml + (x / xMax) * (W - ml - mr);
+    const sy = y => mt + (1 - (y - yMin) / (yMax - yMin)) * (H - mt - mb);
+    const path = pts => pts.map((q, i) => `${i ? 'L' : 'M'}${sx(q[0]).toFixed(1)},${sy(q[1]).toFixed(1)}`).join(' ');
+
+    let grid = '';
+    for (let i = 0; i <= 4; i++) {
+      const v = yMin + (yMax - yMin) * i / 4;
+      grid += `<line x1="${ml}" x2="${W - mr}" y1="${sy(v)}" y2="${sy(v)}" stroke="#263244" stroke-width="1"/>
+               <text x="${ml - 8}" y="${sy(v) + 4}" text-anchor="end" font-size="11" fill="#94a3b8">${brl0(v)}</text>`;
+      const xv = xMax * i / 4;
+      grid += `<text x="${sx(xv)}" y="${H - 18}" text-anchor="middle" font-size="11" fill="#94a3b8">${brl0(xv)}</text>`;
+    }
+    const bFR = simular({ regime: 'simples', prolabore: plFR }, p.ano, p).bolso;
+    const marcAtual = p.prolaboreAtual !== null && p.prolaboreAtual <= xMax
+      ? `<circle cx="${sx(p.prolaboreAtual)}" cy="${sy(simular({ regime: 'simples', prolabore: p.prolaboreAtual }, p.ano, p).bolso)}" r="5" fill="#f59e0b"/>`
+      : '';
+
+    return `
+      <svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bolso do sócio conforme o pró-labore declarado">
+        ${grid}
+        <line x1="${sx(plFR)}" x2="${sx(plFR)}" y1="${mt}" y2="${H - mb}" stroke="#22c55e" stroke-dasharray="4 4"/>
+        <text x="${sx(plFR) + 6}" y="${mt + 12}" font-size="11" fill="#86efac">Fator R 28% · ${brl0(plFR)}</text>
+        <path d="${path(pontosP)}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+        <path d="${path(pontosS)}" fill="none" stroke="#38bdf8" stroke-width="2.5"/>
+        <circle cx="${sx(plFR)}" cy="${sy(bFR)}" r="5" fill="#22c55e"/>
+        ${marcAtual}
+        <text x="${(ml + W - mr) / 2}" y="${H - 2}" text-anchor="middle" font-size="11" fill="#94a3b8">Pró-labore declarado (R$/mês)</text>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#38bdf8"></i>Simples Nacional</span>
+        <span><i style="background:#f59e0b"></i>Lucro Presumido</span>
+        <span><i style="background:#22c55e;height:10px;width:10px;border-radius:50%"></i>Ponto do Fator R</span>
+        ${marcAtual ? '<span><i style="background:#f59e0b;height:10px;width:10px;border-radius:50%"></i>Seu pró-labore atual</span>' : ''}
+      </div>`;
+  }
+
+  function gerarInsights(res, p, melhor) {
+    const out = [];
+    const by = id => res.find(r => r.id === id);
+    const fr = by('fr'), min = by('min'), zero = by('zero'), pres = by('presumido'), atual = by('atual'), hib = by('hibrido');
+    const rbt12 = p.rbt12 || p.receita * 12;
+
+    if (fr && min && fr.anexo === 'III' && min.anexo === 'V') {
+      const ganho = fr.bolso - min.bolso;
+      const custoPL = (fr.inssSocio + fr.irrf) - (min.inssSocio + min.irrf);
+      const economiaDas = min.L.das - fr.L.das;
+      out.push({ t: ganho > 0 ? 'ok' : 'warn', h: `<b>Fator R:</b> declarar ${brl(fr.prolabore)} de pró-labore em vez de ${brl(min.prolabore)} custa ${brl(custoPL)} a mais de INSS + IR, mas reduz o DAS em ${brl(economiaDas)}. Resultado: ${ganho > 0 ? 'você ganha' : 'você perde'} <b>${brl(Math.abs(ganho))}/mês</b> (${brl0(Math.abs(ganho) * 12)}/ano).` });
+    } else if (fr && fr.anexo === 'III' && !min) {
+      out.push({ t: 'ok', h: `<b>Fator R já atingido</b> com o pró-labore mínimo graças à folha de funcionários — você já está no Anexo III.` });
+    }
+
+    if (zero && min) {
+      const dif = zero.bolso - min.bolso;
+      out.push({ t: 'bad', h: `<b>Não declarar pró-labore</b> deixaria ${brl(Math.abs(dif))}/mês ${dif >= 0 ? 'a mais' : 'a menos'} no bolso em relação ao mínimo — mas é irregular para sócio que trabalha na empresa (Lei 8.212/91, art. 12, V, "f"). Riscos: cobrança retroativa de INSS (11% + 20% no Presumido), multa e juros, além de ficar sem contagem para aposentadoria, auxílio-doença e salário-maternidade. Também impede o Fator R.` });
+    }
+
+    if (atual && melhor && atual.id !== melhor.id) {
+      const dif = melhor.bolso - atual.bolso;
+      if (dif > 1) out.push({ t: 'warn', h: `<b>Comparado ao que você faz hoje</b>, "${melhor.nome}" deixaria <b>${brl(dif)}/mês</b> a mais no seu bolso (${brl0(dif * 12)}/ano).` });
+    }
+    if (atual && atual.regime === 'simples' && atual.fatorR < 0.28 && fr && atual.fatorR > 0.2) {
+      out.push({ t: 'warn', h: `Seu Fator R atual é ${pct(atual.fatorR, 1)} — perto dos 28%. Pequenas variações de faturamento podem jogar a empresa para o Anexo V; acompanhe mês a mês.` });
+    }
+
+    if (pres && melhor) {
+      const dif = pres.bolso - melhor.bolso;
+      out.push({ t: dif > 0 ? 'ok' : '', h: `<b>Lucro Presumido</b> ${dif > 0 ? `seria ${brl(dif)}/mês melhor que a melhor opção do Simples` : `fica ${brl(Math.abs(dif))}/mês atrás da melhor opção do Simples`} neste cenário. Pergunte ao contador sobre ISS fixo para sociedade uniprofissional e equiparação hospitalar (presunção de 8%), que podem mudar esse resultado.` });
+    }
+
+    if (p.ano >= 2027 && hib) {
+      const simplesMelhor = res.filter(r => r.regime === 'simples' && !r.hibrido && !r.risco).sort((a, b) => b.bolso - a.bolso)[0];
+      if (simplesMelhor) {
+        const custoHib = simplesMelhor.bolso - hib.bolso;
+        const ganhoCred = hib.creditoCliente - simplesMelhor.creditoCliente;
+        out.push({ t: p.clientes === 'pj' ? 'warn' : '', h: `<b>Simples híbrido:</b> recolher IBS/CBS por fora ${custoHib >= 0 ? `custa ${brl(custoHib)}/mês a mais para você` : `economiza ${brl(-custoHib)}/mês`}, e aumenta o crédito do seu cliente em ${brl(ganhoCred)}/mês. ${p.clientes === 'pj' ? 'Como seus clientes são empresas, isso pode ser decisivo para manter contratos ou justificar preço.' : 'Para clientes pessoa física, crédito não importa — o Simples tradicional tende a ser melhor.'}` });
+      }
+    }
+
+    if (p.ano < 2027) {
+      out.push({ t: '', h: `<b>Reforma tributária:</b> em 2027 a CBS substitui PIS/Cofins; de 2029 a 2032 o ISS é trocado gradualmente pelo IBS. No Simples, a carga do DAS tende a ficar parecida — o que muda é o crédito que seus clientes empresa conseguem aproveitar. Veja a tabela "Linha do tempo".` });
+    }
+
+    const altos = res.filter(r => !r.risco && r.div > 50000);
+    if (altos.length) out.push({ t: 'warn', h: `<b>Dividendos acima de R$ 50 mil/mês</b> sofrem retenção de 10% sobre o total (Lei 15.270/2025). Avalie distribuir em meses alternados com o contador ou, se houver mais de um sócio, dividir a distribuição.` });
+    const comIrpfm = res.filter(r => !r.risco && r.rendaAnual > 600000);
+    if (comIrpfm.length) out.push({ t: 'warn', h: `<b>Imposto mínimo (IRPFM):</b> sua renda anual estimada passa de R$ 600 mil, então entra o imposto mínimo de até 10%. O valor aqui é uma estimativa com redutor simplificado — o cálculo real é na declaração anual.` });
+
+    if (rbt12 > 4800000) out.push({ t: 'bad', h: `Receita de 12 meses acima de R$ 4,8 milhões: a empresa é <b>excluída do Simples</b>. Considere apenas Presumido ou Lucro Real.` });
+    else if (rbt12 > 3600000) out.push({ t: 'warn', h: `Receita de 12 meses acima de R$ 3,6 milhões (sublimite): o <b>ISS passa a ser recolhido fora do DAS</b>. Este simulador não detalha esse caso.` });
+
+    const negativos = res.filter(r => !r.risco && r.lucro < 0);
+    if (negativos.length) out.push({ t: 'bad', h: `Em ${negativos.map(r => `"${r.nome}"`).join(', ')} o pró-labore + tributos passa do que a empresa fatura — não sobra lucro para pagar esse pró-labore.` });
+
+    out.push({ t: '', h: `<b>Perguntas para levar ao contador:</b> meu CNAE realmente está sujeito ao Fator R? Minha folha dos últimos 12 meses fecha 28% em todos os meses? Vale a pena o Simples híbrido em 2027? Meu município tem ISS fixo para minha profissão? Tenho escrituração contábil para distribuir lucro acima da presunção sem IR? Lucro Real faria sentido para mim?` });
+    return out;
+  }
+
+  function render() {
+    const p = lerParams();
+    salvar();
+    if (p.receita <= 0) {
+      el('resultado').innerHTML = '<section class="card"><p>Informe o faturamento mensal para ver as hipóteses.</p></section>';
+      return;
+    }
+
+    const hips = montarHipoteses(p);
+    const hib = hipoteseHibrida(hips, p);
+    const ativas = (p.ano >= 2027 && hib) ? [...hips, hib] : hips;
+    const res = ativas.map(h => simular(h, p.ano, p));
+
+    const validas = res.filter(r => !r.risco).sort((a, b) => b.bolso - a.bolso);
+    const ordenadas = [...validas, ...res.filter(r => r.risco)];
+    const melhor = validas[0];
+    const pior = validas[validas.length - 1];
+    const ref = res.find(r => r.atual) || pior;
+    const ganho = melhor.bolso - ref.bolso;
+
+    const insights = gerarInsights(res, p, melhor);
+
+    el('resultado').innerHTML = `
+      <section class="card">
+        <div class="headline">
+          <small>Melhor hipótese regular para ${brl0(p.receita)}/mês em ${p.ano === 2033 ? '2033+' : p.ano}</small>
+          <strong class="v">${melhor.nome}</strong>
+          <div class="sub">Sobra <b>${brl(melhor.bolso)}</b> por mês no seu bolso · carga total de ${pct(melhor.carga)} ·
+          ${ganho > 0.5 ? `<b>${brl(ganho)}/mês</b> (${brl0(ganho * 12)}/ano) a mais que ${ref.atual ? 'sua situação atual' : `"${ref.nome}"`}` : (ref.atual ? 'você já está na melhor opção' : '')}</div>
+        </div>
+        <h2>Hipóteses lado a lado</h2>
+        <div class="hyps">${ordenadas.map((r, i) => cardHipotese(r, i + 1, melhor.id)).join('')}</div>
+      </section>
+
+      <section class="card">
+        <h2>O que isso significa para você</h2>
+        <ul class="insights">${insights.map(i => `<li class="${i.t}">${i.h}</li>`).join('')}</ul>
+      </section>
+
+      <section class="card">
+        <h2>Quanto pró-labore declarar?</h2>
+        <p>Cada ponto mostra quanto sobra no bolso do sócio para cada valor de pró-labore declarado. Note o salto ao atingir o Fator R: depois dele, aumentar o pró-labore só gera mais INSS e IR.</p>
+        ${graficoProlabore(p)}
+      </section>
+
+      <section class="card">
+        <h2>Detalhamento de cada tributo</h2>
+        ${tabelaDetalhe(ordenadas)}
+      </section>
+
+      <section class="card">
+        <h2>Linha do tempo da Reforma Tributária</h2>
+        <p>Mesmo faturamento e pró-labore, aplicando as regras de cada ano. CBS ${pct(p.cbs, 1)} + IBS ${pct(p.ibs, 1)} (alíquotas de referência estimadas)${p.reducao ? `, com redução de ${pct(p.reducao, 0)}` : ''}.</p>
+        ${tabelaLinhaDoTempo(hips, hib, p)}
+      </section>
+
+      <section class="card">
+        <h2>IBS/CBS: impacto no seu cliente empresa</h2>
+        ${tabelaCreditoCliente(res, p)}
+      </section>
+
+      <section class="card">
+        <h2>Premissas do cálculo</h2>
+        <ul class="premissas">
+          <li>Atividade de serviço sujeita ao Fator R (Anexos III/V), um sócio recebendo pró-labore. CPP do Anexo III/V já está dentro do DAS.</li>
+          <li>Fator R = (pró-labore + salários + FGTS) × 12 ÷ RBT12. RBT12 = faturamento mensal × 12 se não informado.</li>
+          <li>INSS do sócio: 11% até o teto. IRRF 2026: tabela progressiva, desconto simplificado de ${brl(DESC_SIMPLIFICADO)} e redutor da Lei 15.270/2025 (isenção até R$ 5 mil).</li>
+          <li>Lucro distribuído = faturamento − tributos − folha − FGTS − compras − pró-labore. Isento até R$ 50 mil/mês; acima disso, 10% sobre o total.</li>
+          <li>Lucro Presumido: presunção de 32%, IRPJ 15% + adicional de 10%, CSLL 9%, PIS 0,65%, Cofins 3%, ISS municipal, INSS patronal de 20% sobre pró-labore e ~27,8% sobre salários.</li>
+          <li>Reforma: CBS substitui PIS/Cofins em 2027; IBS substitui o ISS em 10%/20%/30%/40% de 2029 a 2032 e integralmente em 2033. O preço informado é o total pago pelo cliente (IBS/CBS por fora já embutidos). Créditos sobre compras de fornecedores no regime regular.</li>
+          <li>Não inclui: honorários contábeis, Lucro Real, Anexo IV, sublimite de ISS, ISS fixo de sociedade uniprofissional, benefícios da folha (férias/13º do sócio) e IRPF anual completo.</li>
+        </ul>
+      </section>
     `;
   }
 
-  function atualizarProlaboreAutomatico() {}
-
-  function calcular() {
-    const cenarios = [
-      calcularCenario('Cenário A', num('receitaA')),
-      calcularCenario('Cenário B', num('receitaB'))
-    ];
-    render(cenarios);
+  // ---------- Persistência local (conveniência) ----------
+  function salvar() {
+    try {
+      const d = {};
+      CAMPOS.forEach(id => d[id] = el(id).value);
+      localStorage.setItem('guia-tributario', JSON.stringify(d));
+    } catch (e) {}
+  }
+  function carregar() {
+    try {
+      const d = JSON.parse(localStorage.getItem('guia-tributario') || 'null');
+      if (d) CAMPOS.forEach(id => { if (d[id] !== undefined) el(id).value = d[id]; });
+    } catch (e) {}
+  }
+  function resetar() {
+    CAMPOS.forEach(id => el(id).value = PADRAO[id]);
+    render();
   }
 
-  ['receitaA','receitaB'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calcular);
+  CAMPOS.forEach(id => {
+    el(id).addEventListener('input', render);
+    el(id).addEventListener('change', render);
   });
-  calcular();
+  carregar();
+  render();
 </script>
 </body>
 </html>
