@@ -203,6 +203,14 @@
         <label for="dependentes">Dependentes no IR do sócio</label>
         <input id="dependentes" type="number" value="0" min="0" step="1" />
       </div>
+      <div>
+        <label for="mesesAtividade">Empresa com menos de 12 meses? Meses de atividade<span class="hint">Meses completos antes do mês atual — vazio = 12 ou mais</span></label>
+        <input id="mesesAtividade" type="number" min="1" max="11" step="1" placeholder="ex.: 5" />
+      </div>
+      <div>
+        <label for="receitaDesdeAbertura">Faturamento total desde a abertura (R$)<span class="hint">Soma desses meses — usado na proporcionalização</span></label>
+        <input id="receitaDesdeAbertura" type="number" min="0" step="500" placeholder="ex.: 75000" />
+      </div>
     </div>
 
     <details>
@@ -283,13 +291,21 @@
   const el = id => document.getElementById(id);
   const num = id => { const v = parseFloat(el(id).value); return isFinite(v) ? v : 0; };
 
-  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','salarios','compras','iss','reducao','dependentes','rbt12','cbs','ibs','salMin','teto'];
+  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','salarios','compras','iss','reducao','dependentes','mesesAtividade','receitaDesdeAbertura','rbt12','cbs','ibs','salMin','teto'];
   const PADRAO = {};
   CAMPOS.forEach(id => PADRAO[id] = el(id).value);
 
   function lerParams() {
     const atualTxt = el('prolaboreAtual').value.trim();
+    // Início de atividade (LC 123, art. 18, §2º): RBT12 = média dos meses anteriores × 12
+    const meses = Math.floor(num('mesesAtividade'));
+    const inicio = meses >= 1 && meses < 12 ? meses : 0;
+    const totalAbertura = num('receitaDesdeAbertura');
+    const rbt12Proporcional = inicio && totalAbertura > 0 ? (totalAbertura / inicio) * 12 : 0;
     return {
+      inicio,
+      totalAbertura,
+      rbt12Proporcional,
       receita: num('receita'),
       prolaboreAtual: atualTxt === '' ? null : Math.max(0, parseFloat(atualTxt) || 0),
       ano: Number(el('ano').value),
@@ -299,7 +315,7 @@
       iss: num('iss') / 100,
       reducao: Number(el('reducao').value),
       dep: Math.max(0, Math.floor(num('dependentes'))),
-      rbt12: num('rbt12'),
+      rbt12: num('rbt12') || rbt12Proporcional,
       cbs: num('cbs') / 100,
       ibs: num('ibs') / 100,
       salMin: num('salMin'),
@@ -673,6 +689,15 @@
     const comIrpfm = res.filter(r => !r.risco && r.rendaAnual > 600000);
     if (comIrpfm.length) out.push({ t: 'warn', h: `<b>Imposto mínimo (IRPFM):</b> sua renda anual estimada passa de R$ 600 mil, então entra o imposto mínimo de até 10%. O valor aqui é uma estimativa com redutor simplificado — o cálculo real é na declaração anual.` });
 
+    if (p.inicio) {
+      const media = p.totalAbertura > 0 ? p.totalAbertura / p.inicio : 0;
+      const faixa = simplesInfo(rbt12, 'III');
+      out.push({ t: media && media <= 15000 ? 'ok' : 'warn', h: p.totalAbertura > 0
+        ? `<b>Início de atividade (${p.inicio} ${p.inicio === 1 ? 'mês' : 'meses'}):</b> você faturou ${brl(p.totalAbertura)}, média de ${brl(media)}/mês. A lei projeta isso para 12 meses: <b>RBT12 = ${brl0(rbt12)}</b>. ${rbt12 <= 180000 ? 'Você está na 1ª faixa — <b>6% no Anexo III</b> com Fator R.' : `Por isso você já está na ${faixa.faixa}ª faixa (Anexo III efetivo ${pct(faixa.ef)}), mesmo sem ter faturado R$ 180 mil de verdade. Os 6% só valem com média de até R$ 15 mil/mês.`} O Fator R também é proporcional: pró-labore médio × 12 ÷ RBT12.`
+        : `<b>Início de atividade:</b> informe também o faturamento total desde a abertura para o guia calcular a RBT12 proporcional (média dos meses × 12).` });
+      out.push({ t: '', h: `<b>Limite no ano de abertura:</b> o teto do Simples é proporcional — R$ 400 mil por mês de atividade no ano (ME: R$ 30 mil/mês). Ultrapassar em até 20% exclui a partir do ano seguinte; acima de 20%, a exclusão é retroativa à abertura.` });
+    }
+
     if (rbt12 > 4800000) out.push({ t: 'bad', h: `Receita de 12 meses acima de R$ 4,8 milhões: a empresa é <b>excluída do Simples</b>. Considere apenas Presumido ou Lucro Real.` });
     else if (rbt12 > 3600000) out.push({ t: 'warn', h: `Receita de 12 meses acima de R$ 3,6 milhões (sublimite): o <b>ISS passa a ser recolhido fora do DAS</b>. Este simulador não detalha esse caso.` });
 
@@ -748,7 +773,7 @@
         <h2>Premissas do cálculo</h2>
         <ul class="premissas">
           <li>Atividade de serviço sujeita ao Fator R (Anexos III/V), um sócio recebendo pró-labore. CPP do Anexo III/V já está dentro do DAS.</li>
-          <li>Fator R = (pró-labore + salários + FGTS) × 12 ÷ RBT12. RBT12 = faturamento mensal × 12 se não informado.</li>
+          <li>Fator R = (pró-labore + salários + FGTS) × 12 ÷ RBT12. RBT12 = faturamento mensal × 12 se não informado; para empresa com menos de 12 meses, média dos meses de atividade × 12 (LC 123, art. 18, §2º).</li>
           <li>INSS do sócio: 11% até o teto. IRRF 2026: tabela progressiva, desconto simplificado de ${brl(DESC_SIMPLIFICADO)} e redutor da Lei 15.270/2025 (isenção até R$ 5 mil).</li>
           <li>Lucro distribuído = faturamento − tributos − folha − FGTS − compras − pró-labore. Isento até R$ 50 mil/mês; acima disso, 10% sobre o total.</li>
           <li>Lucro Presumido: presunção de 32%, IRPJ 15% + adicional de 10%, CSLL 9%, PIS 0,65%, Cofins 3%, ISS municipal, INSS patronal de 20% sobre pró-labore e ~27,8% sobre salários.</li>
