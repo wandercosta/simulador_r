@@ -176,7 +176,15 @@
         <label for="clientes">Seus clientes são</label>
         <select id="clientes">
           <option value="pf">Pessoas físicas / consumidor final</option>
-          <option value="pj">Empresas (que tomam crédito de IBS/CBS)</option>
+          <option value="pj">Empresas no Brasil (que tomam crédito de IBS/CBS)</option>
+          <option value="ext">Empresas no exterior (exportação de serviço)</option>
+        </select>
+      </div>
+      <div>
+        <label for="atividade">Sua atividade</label>
+        <select id="atividade">
+          <option value="ti" selected>Programação / TI (CNAE 6201, 6202, 6203, 6204, 6209)</option>
+          <option value="outra">Outra atividade intelectual sujeita ao Fator R</option>
         </select>
       </div>
       <div>
@@ -192,7 +200,7 @@
         <input id="iss" type="number" value="5" min="2" max="5" step="0.5" />
       </div>
       <div>
-        <label for="reducao">Redução de IBS/CBS da sua atividade</label>
+        <label for="reducao">Redução de IBS/CBS da sua atividade<span class="hint" id="reducaoHint"></span></label>
         <select id="reducao">
           <option value="0">Nenhuma (alíquota cheia)</option>
           <option value="0.3">30% — profissão regulamentada (advogado, engenheiro, contador…)</option>
@@ -291,7 +299,7 @@
   const el = id => document.getElementById(id);
   const num = id => { const v = parseFloat(el(id).value); return isFinite(v) ? v : 0; };
 
-  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','salarios','compras','iss','reducao','dependentes','mesesAtividade','receitaDesdeAbertura','rbt12','cbs','ibs','salMin','teto'];
+  const CAMPOS = ['receita','prolaboreAtual','ano','clientes','atividade','salarios','compras','iss','reducao','dependentes','mesesAtividade','receitaDesdeAbertura','rbt12','cbs','ibs','salMin','teto'];
   const PADRAO = {};
   CAMPOS.forEach(id => PADRAO[id] = el(id).value);
 
@@ -310,10 +318,13 @@
       prolaboreAtual: atualTxt === '' ? null : Math.max(0, parseFloat(atualTxt) || 0),
       ano: Number(el('ano').value),
       clientes: el('clientes').value,
+      exportacao: el('clientes').value === 'ext',
+      atividade: el('atividade').value,
       salarios: num('salarios'),
       compras: num('compras'),
       iss: num('iss') / 100,
-      reducao: Number(el('reducao').value),
+      // TI não é profissão regulamentada: sem redução de IBS/CBS
+      reducao: el('atividade').value === 'ti' ? 0 : Number(el('reducao').value),
       dep: Math.max(0, Math.floor(num('dependentes'))),
       rbt12: num('rbt12') || rbt12Proporcional,
       cbs: num('cbs') / 100,
@@ -367,7 +378,9 @@
     const fgts = sal * 0.08;
     const L = { das: 0, pis: 0, cofins: 0, irpj: 0, csll: 0, iss: 0, cbs: 0, ibs: 0, inssPatronal: 0 };
 
-    const ivaFora = ano >= 2027 && (h.regime === 'presumido' || h.hibrido);
+    const exp = p.exportacao;
+    // Exportação de serviço é imune a IBS/CBS (e isenta de PIS/Cofins/ISS)
+    const ivaFora = ano >= 2027 && !exp && (h.regime === 'presumido' || h.hibrido);
     const tCbs = y.cbs ? p.cbs * (1 - p.reducao) : 0;
     const tIbs = y.ibs * p.ibs * (1 - p.reducao);
     const tFornCbs = y.cbs ? p.cbs : 0;
@@ -384,6 +397,10 @@
       L.ibs = Math.max(0, base * tIbs - credIbs);
       custoCompras = C - creditoCompras;
       creditoCliente = base * (tCbs + tIbs);
+    } else if (exp && ano >= 2027 && h.regime === 'presumido') {
+      // Exportador no regime regular mantém (e pode ressarcir) os créditos das compras
+      creditoCompras = C / (1 + tFornCbs + tFornIbs) * (tFornCbs + tFornIbs);
+      custoCompras = C - creditoCompras;
     }
 
     let fatorR = null, anexo = null, info = null, irpjCsll = 0;
@@ -393,16 +410,17 @@
       anexo = fatorR >= 0.28 ? 'III' : 'V';
       info = simplesInfo(rbt12, anexo);
       const sh = info.sh;
-      const fracDas = ivaFora ? 1 - sh.pis - sh.cofins - sh.iss * y.ibs : 1;
+      let fracDas = ivaFora ? 1 - sh.pis - sh.cofins - sh.iss * y.ibs : 1;
+      if (exp) fracDas = 1 - sh.pis - sh.cofins - sh.iss;
       L.das = base * info.ef * fracDas;
       irpjCsll = base * info.ef * (sh.irpj + sh.csll);
-      if (!ivaFora && ano >= 2027) {
+      if (!ivaFora && !exp && ano >= 2027) {
         // Simples "por dentro": cliente só aproveita a parcela de CBS/IBS embutida no DAS
         creditoCliente = R * info.ef * (sh.pis + sh.cofins + sh.iss * y.ibs);
       }
     } else {
-      if (ano < 2027) { L.pis = R * 0.0065; L.cofins = R * 0.03; }
-      L.iss = base * p.iss * (1 - y.ibs);
+      if (ano < 2027 && !exp) { L.pis = R * 0.0065; L.cofins = R * 0.03; }
+      L.iss = exp ? 0 : base * p.iss * (1 - y.ibs);
       const presumido = base * 0.32;
       L.irpj = presumido * 0.15 + Math.max(0, presumido - 20000) * 0.10;
       L.csll = presumido * 0.09;
@@ -466,6 +484,7 @@
   }
 
   function hipoteseHibrida(hips, p) {
+    if (p.exportacao) return null; // exportação é imune: não há IBS/CBS para recolher por fora
     const anoRef = Math.max(2027, p.ano);
     const candidatas = hips.filter(h => h.regime === 'simples' && !h.risco);
     const melhor = candidatas
@@ -569,6 +588,9 @@
   }
 
   function tabelaCreditoCliente(res, p) {
+    if (p.exportacao) {
+      return `<p>Serviço exportado é <b>imune a IBS/CBS</b>: seu cliente no exterior não paga nem toma crédito, então a escolha entre Simples comum e híbrido não faz diferença. No regime regular (Presumido), os créditos das suas compras podem ser mantidos e ressarcidos.</p>`;
+    }
     if (p.ano < 2027) {
       return `<p>Em 2026 o IBS/CBS está em fase de teste (0,9% + 0,1%, compensáveis) e o Simples está dispensado. A diferença de crédito para clientes empresa começa em <b>2027</b> — mude o ano da simulação para ver.</p>`;
     }
@@ -689,6 +711,13 @@
     const comIrpfm = res.filter(r => !r.risco && r.rendaAnual > 600000);
     if (comIrpfm.length) out.push({ t: 'warn', h: `<b>Imposto mínimo (IRPFM):</b> sua renda anual estimada passa de R$ 600 mil, então entra o imposto mínimo de até 10%. O valor aqui é uma estimativa com redutor simplificado — o cálculo real é na declaração anual.` });
 
+    if (p.atividade === 'ti') {
+      out.push({ t: '', h: `<b>Programação / TI:</b> desenvolvimento de software (CNAE 6201-5/01, 6202-3/00, 6203-1/00), consultoria (6204-0/00) e suporte (6209-1/00) estão sujeitos ao Fator R — Anexo III com folha ≥ 28%, Anexo V abaixo. Não pode ser MEI. Na Reforma, TI <b>não</b> é profissão regulamentada: alíquota cheia de IBS/CBS, sem a redução de 30%.` });
+    }
+    if (p.exportacao) {
+      const s = res.find(r => r.id === 'fr');
+      out.push({ t: 'ok', h: `<b>Exportação de serviço:</b> a receita de clientes no exterior não paga PIS, Cofins nem ISS dentro do DAS${s ? ` — no Anexo III sua alíquota efetiva cai para cerca de <b>${pct(s.L.das / s.R)}</b>` : ''}. A partir de 2027 continua imune a IBS/CBS. Exigências: o resultado do serviço deve ser verificado no exterior e o pagamento deve <b>ingressar no Brasil em moeda estrangeira</b> (contrato de câmbio). Separe essa receita na apuração do DAS — se ela for declarada como receita comum, você paga a mais.` });
+    }
     if (p.inicio) {
       const media = p.totalAbertura > 0 ? p.totalAbertura / p.inicio : 0;
       const faixa = simplesInfo(rbt12, 'III');
@@ -711,6 +740,10 @@
   function render() {
     const p = lerParams();
     salvar();
+    const ti = p.atividade === 'ti';
+    el('reducao').disabled = ti;
+    if (ti) el('reducao').value = '0';
+    el('reducaoHint').textContent = ti ? 'TI não é profissão regulamentada — sem redução' : '';
     if (p.receita <= 0) {
       el('resultado').innerHTML = '<section class="card"><p>Informe o faturamento mensal para ver as hipóteses.</p></section>';
       return;
@@ -778,6 +811,7 @@
           <li>Lucro distribuído = faturamento − tributos − folha − FGTS − compras − pró-labore. Isento até R$ 50 mil/mês; acima disso, 10% sobre o total.</li>
           <li>Lucro Presumido: presunção de 32%, IRPJ 15% + adicional de 10%, CSLL 9%, PIS 0,65%, Cofins 3%, ISS municipal, INSS patronal de 20% sobre pró-labore e ~27,8% sobre salários.</li>
           <li>Reforma: CBS substitui PIS/Cofins em 2027; IBS substitui o ISS em 10%/20%/30%/40% de 2029 a 2032 e integralmente em 2033. O preço informado é o total pago pelo cliente (IBS/CBS por fora já embutidos). Créditos sobre compras de fornecedores no regime regular.</li>
+          <li>Exportação de serviço: DAS sem as parcelas de PIS, Cofins e ISS; no Presumido, sem PIS/Cofins/ISS; imune a IBS/CBS a partir de 2027. Considera 100% da receita como exportação.</li>
           <li>Não inclui: honorários contábeis, Lucro Real, Anexo IV, sublimite de ISS, ISS fixo de sociedade uniprofissional, benefícios da folha (férias/13º do sócio) e IRPF anual completo.</li>
         </ul>
       </section>
